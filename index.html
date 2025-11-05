@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>财务数据合并工具</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eaeaea;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .upload-section {
+            background-color: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-section.drag-over {
+            border-color: #3498db;
+            background-color: #f0f8ff;
+        }
+        
+        .upload-icon {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin: 0 10px;
+        }
+        
+        .upload-btn:hover {
+            background-color: #2980b9;
+        }
+        
+        .file-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+        
+        .file-item {
+            background-color: white;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-name {
+            font-weight: 500;
+        }
+        
+        .file-size {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .remove-file {
+            color: #e74c3c;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+        }
+        
+        .options-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .option-group {
+            margin-bottom: 15px;
+        }
+        
+        .option-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .option-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .merge-btn {
+            background-color: #2ecc71;
+            color: white;
+        }
+        
+        .merge-btn:hover {
+            background-color: #27ae60;
+        }
+        
+        .download-btn {
+            background-color: #9b59b6;
+            color: white;
+        }
+        
+        .download-btn:hover {
+            background-color: #8e44ad;
+        }
+        
+        .download-btn:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            border-bottom: 3px solid #3498db;
+            color: #3498db;
+            font-weight: 500;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f6fc;
+            position: sticky;
+            top: 0;
+            font-weight: 600;
+        }
+        
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .amount-positive {
+            color: #2ecc71;
+        }
+        
+        .amount-negative {
+            color: #e74c3c;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #bdc3c7;
+        }
+        
+        .status-message {
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .data-summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #3498db;
+        }
+        
+        .summary-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .summary-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .upload-buttons {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .upload-btn {
+                margin: 0;
+            }
+            
+            .options-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-summary {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>财务数据合并工具</h1>
+            <p class="description">上传多个财务表格，自动合并单据号、交易类型、结算金额、采购金额、子订单号等关键字段，支持数据汇总和Excel导出</p>
+        </header>
+        
+        <section class="upload-section" id="uploadSection">
+            <div class="upload-icon">📊</div>
+            <h3>上传财务数据文件</h3>
+            <p>支持CSV和Excel格式，可同时选择多个文件或拖放文件到此处</p>
+            <div class="upload-buttons">
+                <input type="file" id="fileInput" class="file-input" multiple accept=".csv,.xlsx,.xls">
+                <button class="upload-btn" onclick="document.getElementById('fileInput').click()">选择文件</button>
+                <button class="upload-btn" id="sampleDataBtn">加载示例数据</button>
+            </div>
+            
+            <div class="file-list" id="fileList">
+                <!-- 文件列表将在这里动态生成 -->
+            </div>
+        </section>
+        
+        <section class="options-section">
+            <div class="option-group">
+                <label class="option-label" for="mergeType">合并方式</label>
+                <select id="mergeType" class="option-select">
+                    <option value="vertical">垂直合并（追加行）</option>
+                    <option value="horizontal">水平合并（追加列）</option>
+                </select>
+            </div>
+            
+            <div class="option-group">
+                <label class="option-label" for="headerOption">表头处理</label>
+                <select id="headerOption" class="option-select">
+                    <option value="first">使用第一个文件的表头</option>
+                    <option value="all">所有文件都包含表头</option>
+                    <option value="none">所有文件都不包含表头</option>
+                </select>
+            </div>
+            
+            <div class="option-group">
+                <label class="option-label" for="amountFormat">金额格式</label>
+                <select id="amountFormat" class="option-select">
+                    <option value="normal">正常显示</option>
+                    <option value="accounting">会计格式（负数为红色）</option>
+                </select>
+            </div>
+            
+            <div class="option-group">
+                <label class="option-label" for="dataValidation">数据验证</label>
+                <select id="dataValidation" class="option-select">
+                    <option value="none">不验证</option>
+                    <option value="basic">基础验证（去重、空值）</option>
+                    <option value="strict">严格验证（单据号格式）</option>
+                </select>
+            </div>
+        </section>
+        
+        <div id="statusMessage" class="status-message" style="display: none;"></div>
+        
+        <div class="action-buttons">
+            <button class="action-btn merge-btn" id="mergeBtn">合并表格</button>
+            <button class="action-btn download-btn" id="downloadBtn" disabled>导出为Excel</button>
+        </div>
+        
+        <div id="dataSummary" class="data-summary" style="display: none;">
+            <!-- 数据汇总卡片将在这里动态生成 -->
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="preview">文件预览</div>
+            <div class="tab" data-tab="merged">合并结果</div>
+        </div>
+        
+        <div class="tab-content active" id="previewTab">
+            <div class="table-container">
+                <div class="empty-state" id="previewEmpty">
+                    <i>📋</i>
+                    <h3>暂无数据</h3>
+                    <p>请先上传文件以预览表格内容</p>
+                </div>
+                <table id="previewTable" style="display: none;">
+                    <!-- 预览表格将在这里动态生成 -->
+                </table>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="mergedTab">
+            <div class="table-container">
+                <div class="empty-state" id="mergedEmpty">
+                    <i>🔗</i>
+                    <h3>暂无合并数据</h3>
+                    <p>请先点击"合并表格"按钮生成合并结果</p>
+                </div>
+                <table id="mergedTable" style="display: none;">
+                    <!-- 合并结果表格将在这里动态生成 -->
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 存储上传的文件数据
+        let uploadedFiles = [];
+        let mergedData = null;
+        
+        // DOM元素
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const mergeBtn = document.getElementById('mergeBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const previewTable = document.getElementById('previewTable');
+        const mergedTable = document.getElementById('mergedTable');
+        const previewEmpty = document.getElementById('previewEmpty');
+        const mergedEmpty = document.getElementById('mergedEmpty');
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const uploadSection = document.getElementById('uploadSection');
+        const statusMessage = document.getElementById('statusMessage');
+        const sampleDataBtn = document.getElementById('sampleDataBtn');
+        const dataSummary = document.getElementById('dataSummary');
+        
+        // 财务数据标准字段
+        const financialFields = [
+            '单据号', '交易类型', '结算金额', '采购金额', '子订单号', '采购金额（CNY）'
+        ];
+        
+        // 文件上传处理
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        });
+        
+        // 拖放功能
+        uploadSection.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadSection.classList.add('drag-over');
+        });
+        
+        uploadSection.addEventListener('dragleave', function() {
+            uploadSection.classList.remove('drag-over');
+        });
+        
+        uploadSection.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadSection.classList.remove('drag-over');
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
+        });
+        
+        // 处理上传的文件
+        function handleFiles(files) {
+            let validFiles = 0;
+            
+            files.forEach(file => {
+                // 检查文件类型
+                if (!isValidFileType(file)) {
+                    showStatus(`文件 "${file.name}" 不是支持的格式。请上传CSV或Excel文件。`, 'error');
+                    return;
+                }
+                
+                // 检查是否已上传相同文件
+                if (uploadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    showStatus(`文件 "${file.name}" 已经上传过了。`, 'error');
+                    return;
+                }
+                
+                validFiles++;
+                
+                // 读取文件内容
+                readFile(file);
+            });
+            
+            if (validFiles > 0) {
+                showStatus(`成功上传 ${validFiles} 个文件`, 'success');
+            }
+            
+            // 重置文件输入，允许重复选择相同文件
+            fileInput.value = '';
+        }
+        
+        // 检查文件类型
+        function isValidFileType(file) {
+            const validTypes = [
+                'text/csv',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            ];
+            
+            // 通过文件扩展名检查
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+            if (['csv', 'xlsx', 'xls'].includes(fileExtension)) {
+                return true;
+            }
+            
+            return validTypes.includes(file.type);
+        }
+        
+        // 读取文件内容
+        function readFile(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const data = e.target.result;
+                let fileData;
+                
+                try {
+                    if (file.name.endsWith('.csv')) {
+                        fileData = parseCSV(data);
+                    } else {
+                        fileData = parseExcel(data);
+                    }
+                    
+                    // 标准化财务数据字段
+                    fileData = standardizeFinancialData(fileData);
+                    
+                    // 存储文件数据
+                    uploadedFiles.push({
+                        name: file.name,
+                        size: formatFileSize(file.size),
+                        data: fileData
+                    });
+                    
+                    // 更新文件列表
+                    updateFileList();
+                    
+                    // 更新预览
+                    updatePreview();
+                } catch (error) {
+                    showStatus(`解析文件 "${file.name}" 时出错: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.onerror = function() {
+                showStatus(`读取文件 "${file.name}" 时出错`, 'error');
+            };
+            
+            if (file.name.endsWith('.csv')) {
+                reader.readAsText(file, 'UTF-8');
+            } else {
+                reader.readAsArrayBuffer(file);
+            }
+        }
+        
+        // 解析CSV文件
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const result = [];
+            
+            lines.forEach(line => {
+                if (line.trim() === '') return;
+                
+                // 简单的CSV解析，处理带引号和逗号的值
+                const values = [];
+                let current = '';
+                let inQuotes = false;
+                
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(current);
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                
+                values.push(current);
+                result.push(values);
+            });
+            
+            return result;
+        }
+        
+        // 解析Excel文件
+        function parseExcel(data) {
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            return XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        }
+        
+        // 标准化财务数据字段
+        function standardizeFinancialData(data) {
+            if (data.length === 0) return data;
+            
+            const headers = data[0];
+            const standardizedData = [financialFields]; // 使用标准字段作为表头
+            
+            // 构建字段映射
+            const fieldMapping = {};
+            financialFields.forEach(field => {
+                const index = headers.findIndex(header => 
+                    header && header.toString().toLowerCase().includes(field.toLowerCase())
+                );
+                fieldMapping[field] = index !== -1 ? index : -1;
+            });
+            
+            // 处理数据行
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                const newRow = [];
+                
+                financialFields.forEach(field => {
+                    const index = fieldMapping[field];
+                    if (index !== -1 && row[index] !== undefined) {
+                        newRow.push(row[index]);
+                    } else {
+                        newRow.push('');
+                    }
+                });
+                
+                standardizedData.push(newRow);
+            }
+            
+            return standardizedData;
+        }
+        
+        // 更新文件列表显示
+        function updateFileList() {
+            fileList.innerHTML = '';
+            
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = '<p style="text-align: center; color: #7f8c8d;">暂无上传文件</p>';
+                return;
+            }
+            
+            uploadedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div>
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-size">${file.size} - ${file.data.length - 1} 行数据</div>
+                    </div>
+                    <button class="remove-file" data-index="${index}">×</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+            
+            // 添加删除文件的事件监听
+            document.querySelectorAll('.remove-file').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    const removedFile = uploadedFiles[index];
+                    uploadedFiles.splice(index, 1);
+                    updateFileList();
+                    updatePreview();
+                    showStatus(`已移除文件 "${removedFile.name}"`, 'success');
+                });
+            });
+        }
+        
+        // 更新预览表格
+        function updatePreview() {
+            if (uploadedFiles.length === 0) {
+                previewEmpty.style.display = 'block';
+                previewTable.style.display = 'none';
+                return;
+            }
+            
+            previewEmpty.style.display = 'none';
+            previewTable.style.display = 'table';
+            
+            // 显示第一个文件的预览
+            const firstFile = uploadedFiles[0];
+            displayTable(previewTable, firstFile.data);
+        }
+        
+        // 在表格中显示数据
+        function displayTable(tableElement, data) {
+            tableElement.innerHTML = '';
+            
+            if (data.length === 0) {
+                const emptyRow = document.createElement('tr');
+                const emptyCell = document.createElement('td');
+                emptyCell.colSpan = financialFields.length;
+                emptyCell.textContent = '没有数据';
+                emptyCell.style.textAlign = 'center';
+                emptyCell.style.padding = '20px';
+                emptyCell.style.color = '#7f8c8d';
+                emptyRow.appendChild(emptyCell);
+                tableElement.appendChild(emptyRow);
+                return;
+            }
+            
+            // 创建表头
+            const thead = document.createElement('thead');
+            const headerRow = document.createElement('tr');
+            
+            // 使用第一行作为表头
+            const headers = data[0];
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            
+            thead.appendChild(headerRow);
+            tableElement.appendChild(thead);
+            
+            // 创建表格主体
+            const tbody = document.createElement('tbody');
+            
+            // 从第二行开始
+            for (let i = 1; i < data.length; i++) {
+                const row = document.createElement('tr');
+                
+                data[i].forEach((cell, index) => {
+                    const td = document.createElement('td');
+                    
+                    // 对金额字段进行特殊处理
+                    if ((headers[index] === '结算金额' || headers[index] === '采购金额' || headers[index] === '采购金额（CNY）') && cell) {
+                        const amount = parseFloat(cell);
+                        if (!isNaN(amount)) {
+                            td.textContent = amount.toFixed(2);
+                            
+                            // 应用会计格式
+                            const amountFormat = document.getElementById('amountFormat').value;
+                            if (amountFormat === 'accounting') {
+                                if (amount < 0) {
+                                    td.classList.add('amount-negative');
+                                } else if (amount > 0) {
+                                    td.classList.add('amount-positive');
+                                }
+                            }
+                        } else {
+                            td.textContent = cell;
+                        }
+                    } else {
+                        td.textContent = cell;
+                    }
+                    
+                    row.appendChild(td);
+                });
+                
+                tbody.appendChild(row);
+            }
+            
+            tableElement.appendChild(tbody);
+        }
+        
+        // 合并表格
+        mergeBtn.addEventListener('click', function() {
+            if (uploadedFiles.length === 0) {
+                showStatus('请先上传至少一个文件', 'error');
+                return;
+            }
+            
+            const mergeType = document.getElementById('mergeType').value;
+            const headerOption = document.getElementById('headerOption').value;
+            
+            // 执行合并
+            try {
+                mergedData = mergeTables(mergeType, headerOption);
+                
+                // 显示合并结果
+                if (mergedData && mergedData.length > 0) {
+                    mergedEmpty.style.display = 'none';
+                    mergedTable.style.display = 'table';
+                    displayTable(mergedTable, mergedData);
+                    
+                    // 更新数据汇总
+                    updateDataSummary(mergedData);
+                    
+                    // 启用下载按钮
+                    downloadBtn.disabled = false;
+                    
+                    // 切换到合并结果标签
+                    switchTab('merged');
+                    
+                    showStatus(`成功合并 ${uploadedFiles.length} 个文件，共 ${mergedData.length - 1} 行数据`, 'success');
+                } else {
+                    showStatus('合并失败或没有数据可合并', 'error');
+                }
+            } catch (error) {
+                showStatus(`合并过程中出错: ${error.message}`, 'error');
+            }
+        });
+        
+        // 合并表格的逻辑
+        function mergeTables(mergeType, headerOption) {
+            if (uploadedFiles.length === 0) return [];
+            
+            let result = [];
+            
+            if (mergeType === 'vertical') {
+                // 垂直合并（追加行）
+                if (headerOption === 'first') {
+                    // 使用第一个文件的表头
+                    result.push(uploadedFiles[0].data[0]);
+                    
+                    // 添加所有文件的数据行
+                    uploadedFiles.forEach((file, index) => {
+                        const startRow = index === 0 ? 1 : 0; // 第一个文件跳过表头
+                        
+                        for (let i = startRow; i < file.data.length; i++) {
+                            result.push(file.data[i]);
+                        }
+                    });
+                } else if (headerOption === 'all') {
+                    // 所有文件都包含表头，全部保留
+                    uploadedFiles.forEach(file => {
+                        file.data.forEach(row => {
+                            result.push(row);
+                        });
+                    });
+                } else {
+                    // 所有文件都不包含表头
+                    uploadedFiles.forEach(file => {
+                        file.data.forEach(row => {
+                            result.push(row);
+                        });
+                    });
+                }
+            } else {
+                // 水平合并（追加列）
+                const maxRows = Math.max(...uploadedFiles.map(file => file.data.length));
+                
+                for (let i = 0; i < maxRows; i++) {
+                    const newRow = [];
+                    
+                    uploadedFiles.forEach(file => {
+                        if (i < file.data.length) {
+                            newRow.push(...file.data[i]);
+                        } else {
+                            // 如果文件行数不足，用空值填充
+                            for (let j = 0; j < file.data[0].length; j++) {
+                                newRow.push('');
+                            }
+                        }
+                    });
+                    
+                    result.push(newRow);
+                }
+            }
+            
+            return result;
+        }
+        
+        // 更新数据汇总
+        function updateDataSummary(data) {
+            if (data.length <= 1) {
+                dataSummary.style.display = 'none';
+                return;
+            }
+            
+            dataSummary.style.display = 'grid';
+            
+            // 计算汇总数据
+            let totalSettlement = 0;
+            let totalPurchase = 0;
+            let transactionCount = data.length - 1;
+            let uniqueDocNumbers = new Set();
+            
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                
+                // 结算金额汇总
+                const settlementAmount = parseFloat(row[2]) || 0;
+                totalSettlement += settlementAmount;
+                
+                // 采购金额汇总
+                const purchaseAmount = parseFloat(row[3]) || 0;
+                totalPurchase += purchaseAmount;
+                
+                // 唯一单据号
+                if (row[0]) uniqueDocNumbers.add(row[0]);
+            }
+            
+            dataSummary.innerHTML = `
+                <div class="summary-card">
+                    <div class="summary-label">交易笔数</div>
+                    <div class="summary-value">${transactionCount}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">唯一单据数</div>
+                    <div class="summary-value">${uniqueDocNumbers.size}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">结算总额</div>
+                    <div class="summary-value">¥${totalSettlement.toFixed(2)}</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-label">采购总额</div>
+                    <div class="summary-value">¥${totalPurchase.toFixed(2)}</div>
+                </div>
+            `;
+        }
+        
+        // 下载合并结果为Excel
+        downloadBtn.addEventListener('click', function() {
+            if (!mergedData || mergedData.length === 0) {
+                showStatus('没有可下载的数据', 'error');
+                return;
+            }
+            
+            try {
+                // 创建工作簿
+                const wb = XLSX.utils.book_new();
+                
+                // 创建工作表
+                const ws = XLSX.utils.aoa_to_sheet(mergedData);
+                
+                // 将工作表添加到工作簿
+                XLSX.utils.book_append_sheet(wb, ws, "财务合并数据");
+                
+                // 生成Excel文件并下载
+                XLSX.writeFile(wb, "财务合并数据.xlsx");
+                
+                showStatus('Excel文件已生成并开始下载', 'success');
+            } catch (error) {
+                showStatus(`生成Excel文件时出错: ${error.message}`, 'error');
+            }
+        });
+        
+        // 切换标签页
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                switchTab(tabId);
+            });
+        });
+        
+        function switchTab(tabId) {
+            // 更新标签状态
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // 更新内容显示
+            tabContents.forEach(content => {
+                if (content.id === tabId + 'Tab') {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+        
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // 显示状态消息
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            
+            if (type === 'success') {
+                statusMessage.classList.add('status-success');
+            } else if (type === 'error') {
+                statusMessage.classList.add('status-error');
+            }
+            
+            statusMessage.style.display = 'block';
+            
+            // 3秒后自动隐藏
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 加载示例数据
+        sampleDataBtn.addEventListener('click', function() {
+            // 创建示例数据
+            const sampleData1 = [
+                ['单据号', '交易类型', '结算金额', '采购金额', '子订单号', '采购金额（CNY）'],
+                ['211-03221719708792412', '销售回款', '853.71', '442.68', '', ''],
+                ['211-03221719708792412-D01', '销售冲回', '-85.37', '', '', ''],
+                ['211-19565557653111509', '销售回款', '264.29', '', '', ''],
+                ['211-09816498627191760', '销售回款', '451.85', '', '', ''],
+                ['211-06892741673590533', '销售回款', '213.89', '', '', '']
+            ];
+            
+            const sampleData2 = [
+                ['单据号', '交易类型', '结算金额', '采购金额', '子订单号', '采购金额（CNY）'],
+                ['211-15048484690553121', '销售回款', '402.58', '', '', ''],
+                ['211-06811546399353321', '销售回款', '170.2', '', '', ''],
+                ['PO-211-06811470377593321', '运费回款', '21.3', '', '', ''],
+                ['211-16227303245433004', '销售回款', '211.19', '', '', ''],
+                ['211-16227303245433004-D01', '销售冲回', '0', '', '', '']
+            ];
+            
+            // 清空现有文件
+            uploadedFiles = [];
+            
+            // 添加示例文件
+            uploadedFiles.push({
+                name: '财务数据1.csv',
+                size: '1.2 KB',
+                data: sampleData1
+            });
+            
+            uploadedFiles.push({
+                name: '财务数据2.csv',
+                size: '1.1 KB',
+                data: sampleData2
+            });
+            
+            // 更新界面
+            updateFileList();
+            updatePreview();
+            
+            showStatus('示例数据已加载', 'success');
+        });
+        
+        // 初始化
+        updateFileList();
+        updatePreview();
+    </script>
+</body>
+</html>
